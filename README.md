@@ -17,3 +17,17 @@ it sort of follows this trend until the 70 nm marks where the differences start 
 <img width="570" height="480" alt="Abs_71nm" src="https://github.com/user-attachments/assets/3c18e087-de39-4611-a578-99e7890e1959" />
 
 Though there are some sizes that still have some similarities, you can generate these plots and play around them in the check.ipynb notebook, and I've also added some of the graphs for a few sizes in the results folder.
+
+# Installing requirments
+
+To run `mie_solver_collab`, you need to set up a dedicated Conda environment. The following steps will create the environment with Python 3.11 and install all required packages using the `environment.yml` file.
+
+1. Create the Conda environment and install the dependencies:
+   ```bash
+   conda env create -f environment.yml -n conda_mie_solver
+   ```
+
+2. Activate the new environment:
+   ```bash
+   conda activate conda_mie_solver
+   ```
