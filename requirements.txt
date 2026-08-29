@@ -1,0 +1,50 @@
+asttokens @ file:///home/conda/feedstock_root/build_artifacts/asttokens_1763409923949/work
+colorama @ file:///home/conda/feedstock_root/build_artifacts/colorama_1733218098505/work
+comm @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_comm_1753453984/work
+contourpy @ file:///D:/bld/bld/rattler-build_contourpy_1769155978/work
+cycler @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_cycler_1764466758/work
+debugpy @ file:///D:/bld/bld/rattler-build_debugpy_1769745008/work
+decorator @ file:///home/conda/feedstock_root/build_artifacts/decorator_1740384970518/work
+executing @ file:///home/conda/feedstock_root/build_artifacts/executing_1756729339227/work
+fonttools @ file:///home/conda/feedstock_root/build_artifacts/fonttools_1776708057211/work
+h5py==3.16.0
+ipykernel @ file:///D:/bld/bld/rattler-build_ipykernel_1770566174/work
+ipython @ file:///D:/bld/bld/rattler-build_ipython_1777038425/work
+ipython_pygments_lexers @ file:///home/conda/feedstock_root/build_artifacts/ipython_pygments_lexers_1737123620466/work
+jedi @ file:///home/conda/feedstock_root/build_artifacts/jedi_1733300866624/work
+jupyter_client @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_jupyter_client_1767954655/work
+jupyter_core @ file:///D:/bld/bld/rattler-build_jupyter_core_1760643889/work
+kiwisolver @ file:///D:/bld/bld/rattler-build_kiwisolver_1773067062/work
+llvmlite==0.47.0
+matplotlib==3.10.9
+matplotlib-inline @ file:///home/conda/feedstock_root/build_artifacts/matplotlib-inline_1778264321245/work
+miepython @ file:///home/conda/feedstock_root/build_artifacts/miepython_1785331887165/work
+munkres==1.1.4
+nest_asyncio @ file:///home/conda/feedstock_root/build_artifacts/nest-asyncio_1733325553580/work
+numba @ file:///D:/bld/numba_1778390418437/work
+numpy @ file:///D:/bld/bld/rattler-build_numpy_1773839141/work/dist/numpy-2.4.3-cp314-cp314-win_amd64.whl#sha256=85709aebf7a6d3538ea1d99f232f1d421f93ca974f8952429f98e2c8385e0b78
+opencv-python==4.13.0.92
+packaging @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_packaging_1777103621/work
+pandas @ file:///C:/Users/task_ZunDjHXJRDOaL_0/croot/pandas_1785760254460/work
+parso @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_parso_1777722955/work
+pillow @ file:///D:/bld/bld/rattler-build_pillow_1775060119/work
+platformdirs @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_platformdirs_1775741140/work
+prompt_toolkit @ file:///home/conda/feedstock_root/build_artifacts/prompt-toolkit_1756321756983/work
+psutil @ file:///D:/bld/bld/rattler-build_psutil_1769678167/work
+pure_eval @ file:///home/conda/feedstock_root/build_artifacts/pure_eval_1733569405015/work
+Pygments @ file:///home/conda/feedstock_root/build_artifacts/pygments_1774796700044/work
+pyparsing @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_pyparsing_1769003998/work
+python-dateutil @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_python-dateutil_1751104122/work
+pywin32 @ file:///D:/bld/bld/rattler-build_pywin32_1756487145/work
+pyzmq @ file:///D:/bld/bld/rattler-build_pyzmq_1771716967/work
+scipy @ file:///C:/bld/scipy-split_1771879223205/work/dist/scipy-1.17.1-cp314-cp314-win_amd64.whl#sha256=34600a969703dd2940d6ce0f2812a90735a69e009b86b9c0924daf4b60450d10
+six @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_six_1753199211/work
+slmsuite==0.4.1
+stack_data @ file:///home/conda/feedstock_root/build_artifacts/stack_data_1733569443808/work
+tornado @ file:///D:/bld/tornado_1774357956751/work
+tqdm==4.67.3
+traitlets @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_traitlets_1778074251/work
+typing_extensions @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_typing_extensions_1756220668/work
+tzdata @ file:///home/task_177806041933677/croot/python-tzdata_1778060738968/work
+unicodedata2 @ file:///D:/bld/unicodedata2_1770908980057/work
+wcwidth @ file:///home/conda/feedstock_root/build_artifacts/wcwidth_1777744409267/work
