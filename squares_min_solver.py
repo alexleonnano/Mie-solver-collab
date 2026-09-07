@@ -86,38 +86,32 @@ print(f'Wavelength where RMS is minimised = {fitted_radii*1e3:.0f} nm')
 
 fig, axes = plt.subplots(3,1, figsize=(5,7))
 
+# Subplot 1. Measured and fitted theory spectra
 ax=axes[0]
 
-# d = pre_df[(pre_df['wavelength (nm)'] > cryst_scat.index.min()) & (pre_df['wavelength (nm)'] < 670) ]
-# cryst_filtered = cryst_scat[(cryst_scat.index >= d['wavelength (nm)'].min()) & (cryst_scat.index <= 670)]
+ax.plot(wavelengths*1e3, norm_exp_scat, label='Measured Scat.')
 
-ax.plot(exp_data_df['wl'], normalised_data(exp_data_df['scat']), label='Measured Scat.')
-# ax.plot(, normalize_data(cryst_filtered[nearest_radius]), color="firebrick", label=f"Crystalline - r={radii} nm")
+x = 2 * np.pi * fitted_radii / wavelengths
+qext, qsca, qback, g = mie.efficiencies_mx(m, x)
+norm_qscat = normalised_data(qsca)
+
+ax.plot(wavelengths*1e3, norm_qscat, color="firebrick", label=f"Crystalline - r={fitted_radii*1e3} nm")
 
 ax.set_xlabel("wavelength (nm)")
 ax.set_ylabel("Intensity (a.u.)")
 ax.legend()
 
+# Subplot 2. Residuals Profile for fitted particle radius
 ax2=axes[1]
 
-# interp_post_sig = np.interp(
-#             d['wavelength (nm)'],                # Target X-grid (pre_df wavelengths)
-#             scat.index,         # Source X-grid (shifted wavelengths)
-#             scat[radii]      # Source Y-data
-#         )
+residuals = (norm_qscat- norm_exp_scat) ** 2
+ax2.plot(residuals)
+ax2.set_title('Residuals')
 
-# norm_pre = normalize_data(d['processed_sig'].values)
-# norm_post = normalize_data(interp_post_sig)
-
-# residuals = (norm_pre - norm_post) ** 2
-
-# ax2.plot(residuals)
-# ax2.set_title('Residuals')
-
-
-axes[2].plot(exp_data_df['wl'], rms)
+# Subplot 3. RMS score for all tested particle sizes
+axes[2].plot(radius_range*1e3, rms)
 axes[2].set_title('RMS')
-axes[2].set_xlabel('Offset (nm)')
+axes[2].set_xlabel('Particle Radius (nm)')
 axes[2].set_ylabel('RMS')
 axes[1].set_ylabel('Residual')
 
