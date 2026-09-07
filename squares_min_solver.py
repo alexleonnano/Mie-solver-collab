@@ -21,19 +21,24 @@ def normalised_data(data):
     """Noramlise the data between [0,1] - min-max method"""
     return (data - min(data))/(max(data)- min(data))
 
+# Experimental Data Import
 exp_data_path = 'experimental_data/SiNP_crystaline_scat.csv'
 exp_data_df = pd.read_csv(exp_data_path, header=0,names=['wl', 'scat'])
-norm_exp = normalised_data(exp_data_df['scat'])
 
-
-
+# Material Refrative Index Data Import
 material = "materials/Silicon - crystalline - Green 2008.txt"
 refrative_index_df = pd.read_csv(material,  sep=r'\s+', header = 0, names = ["wl", "n", "k"], dtype = float)
 
-# NOTE: using the experimental data wl sample count is ok-ish. 
-#       -> Should decouple them
-n, k = interp.wvl_interpolation(exp_data_df['wl'],  
-                                # Access pd.Series diretly from the df
+# Setting up global wl range for interpolation
+wl_step = 1 # nm step size between each wl sample
+wavelengths = np.arange(min(exp_data_df['wl']), max(exp_data_df['wl']), wl_step) *1e-3 # wavelength range to me tested with
+
+# Experimental Data Interpolation
+exp_scat = np.interp(wavelengths, exp_data_df['wl']*1e-3, exp_data_df['scat'])
+norm_exp_scat = normalised_data(exp_scat) # normalising experimental data
+
+# Refrative Index Data Interpolation
+n, k = interp.wvl_interpolation(wavelengths, 
                                 refrative_index_df['wl'], 
                                 refrative_index_df['n'],
                                 refrative_index_df['k'],
