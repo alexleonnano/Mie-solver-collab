@@ -97,7 +97,7 @@ def solve_squares_min(exp_data: np.array,
     # then compare the measured spectra to what was theory. 
     # Radii that has the smalled RMS to the measured data is the best fitted particle.
     for i, radii in enumerate(radius_range):
-        # NOTE: Could be made faster with parallel compute
+        # TODO: make faster with parallel compute
 
         # Define the size paramter for the particle
         x = 2 * np.pi * radii / wavelengths
@@ -148,6 +148,8 @@ radius_range = np.linspace(5, 200, 100) * 1e-3 # in micron
 
 fitted_radii, rms = solve_squares_min(exp_scat, m, radius_range)
 
+print(f'Fitted particle radius r={fitted_radii*1e3:.4f} nm with RMS score of {min(rms):.4g}.')
+
 # -------------------
 #  - Profiling Plot -
 # -------------------
@@ -164,25 +166,29 @@ x = 2 * np.pi * fitted_radii / wavelengths
 qext, qsca, qback, g = mie.efficiencies_mx(m, x)
 norm_qscat = normalised_data(qsca)
 
-ax.plot(wavelengths*1e3, norm_qscat, color="firebrick", label=f"Crystalline - r={fitted_radii*1e3} nm")
+ax.plot(wavelengths*1e3, norm_qscat, color="firebrick", label=f"Crystalline - r={fitted_radii*1e3:.2f} nm")
 
-ax.set_xlabel("wavelength (nm)")
+ax.set_xlabel("Wavelength (nm)")
 ax.set_ylabel("Intensity (a.u.)")
 ax.legend()
 
 # Subplot 2. Residuals Profile for fitted particle radius
 ax2=axes[1]
 
-residuals = (norm_qscat- norm_exp_scat) ** 2
+residuals = (norm_qscat- norm_exp_scat)
 ax2.plot(residuals)
+ax2.axhline(0, color='red', linestyle='--', alpha=0.5)
 ax2.set_title('Residuals')
+ax2.set_xlabel('Wavelength (nm)')
+ax2.set_ylabel(r'$theory - experiment$')
 
 # Subplot 3. RMS score for all tested particle sizes
-axes[2].plot(radius_range*1e3, rms)
-axes[2].set_title('RMS')
-axes[2].set_xlabel('Particle Radius (nm)')
-axes[2].set_ylabel('RMS')
-axes[1].set_ylabel('Residual')
+ax3=axes[2]
+
+ax3.plot(radius_range*1e3, rms)
+ax3.set_title('RMS')
+ax3.set_xlabel('Particle Radius (nm)')
+ax3.set_ylabel('RMS')
 
 fig.tight_layout()
 plt.show()
