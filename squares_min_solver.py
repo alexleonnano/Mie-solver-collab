@@ -49,8 +49,8 @@ m = n - 1.0j * k # complex refrative index
 
 
 # range of to be fitted particles
-# NOTE: this maybe a large array (1340)
-radius_range = np.linspace(5, 200, len(norm_exp)) * 1e-3 # in micron
+# TODO: Radius resolution definable
+radius_range = np.linspace(5, 200, 100) * 1e-3 # in micron
 
 # Pre allocated rms array
 rms = np.zeros_like(radius_range)
@@ -60,25 +60,25 @@ rms = np.zeros_like(radius_range)
 # then compare the measured spectra to what was theory. 
 # Radii that has the smalled RMS to the measured data is the best fitted particle.
 for i, radii in enumerate(radius_range):
-    # NOTE: High N count of wl samples (1340) it takes ~5-10 s to complete all itterations. 
-    #       Could be made faster with parallel compute
+    # NOTE: Could be made faster with parallel compute
 
     # Define the size paramter for the particle
-    x = 2 * np.pi * radii / exp_data_df['wl']
+    x = 2 * np.pi * radii / wavelengths
 
 
     # Calculate the Mie spectra for a given particle size
-    qext, qsca, qback, g = mie.efficiencies_mx(m, x, 0)
+    qext, qsca, qback, g = mie.efficiencies_mx(m, x)
 
     # Assumes measured data is scattering spectra.
     norm_qscat = normalised_data(qsca)
 
-    residuals = (norm_qscat- norm_exp) ** 2
+    residuals = (norm_qscat- norm_exp_scat) ** 2
     rms_calc = np.sqrt(np.mean(residuals))
 
     rms[i] = rms_calc   
 
-print(f'Wavelength where RMS is minimised = {radius_range[np.argmin(rms)]*1e3:.0f} nm')
+fitted_radii = radius_range[np.argmin(rms)] # in microns
+print(f'Wavelength where RMS is minimised = {fitted_radii*1e3:.0f} nm')
 
 # -------------------
 #  - Profiling Plot -
