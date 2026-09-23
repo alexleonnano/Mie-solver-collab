@@ -7,7 +7,17 @@ Intened for a first pass of using minimisation of residual
 squares to find the best fitting spectra to experimentally measured data
 
 @author: william.mcm.p
+
+Legacy version, superseded by run_fit.py. Run from the project root:
+    python legacy/squares_min_solver.py
 """
+
+import sys
+from pathlib import Path
+
+# Add project root (Mie-solver-collab) to python path
+root_dir = Path(__file__).resolve().parents[1]
+sys.path.append(str(root_dir))
 
 from src import load_material as tools
 from src import lambda_interpolate as interp
