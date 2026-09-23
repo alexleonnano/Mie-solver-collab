@@ -10,19 +10,26 @@ and reports the radius with the lowest RMS difference. Settings come from
 Usage:
     python run_fit.py                               # spectrum from config.toml
     python run_fit.py experimental_data/sample.csv  # one spectrum
-    python run_fit.py experimental_data/            # every spectrum in a folder
+    python run_fit.py experimental_data/            # batch: every spectrum in a folder
+    python run_fit.py my_samples/ --pattern "SiNP_*.csv"
     python run_fit.py sample.csv --medium-index 1.0 --show
 
-Results are written to results/<spectrum name>_<timestamp>/:
+A single spectrum is written to results/<sample>_<timestamp>/:
     fit_report.txt    - fitted radius, RMS and the settings used
     fit_spectrum.txt  - wavelength, measured, theory and residual (normalised)
     rms_curve.txt     - RMS for every radius tested
     fit_plot.png      - diagnostic plot
-A batch run also writes results/batch_summary_<timestamp>.txt.
+
+A batch (a folder, or several files) is written to results/batch_<folder>_<timestamp>/:
+    batch_summary.txt - one row per sample: radius, diameter, RMS, status, notes
+    batch_radii.png   - fitted radius of every sample
+    <sample>/         - the four files above, for each sample
+The sample name is the spectrum file name without its extension.
 """
 
 import argparse
 from datetime import datetime
+from fnmatch import fnmatch
 from pathlib import Path
 import sys
 import tomllib
@@ -46,6 +53,7 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(description="Fit nanoparticle radius from a measured spectrum using Mie theory.")
     parser.add_argument("spectra", nargs="*", help="Spectrum file(s) or folder(s). Defaults to [input] spectrum in the config.")
     parser.add_argument("-c", "--config", default="config.toml", help="Config file (default: config.toml).")
+    parser.add_argument("--pattern", help='Only fit files in folders matching this pattern, e.g. "SiNP_*.csv".')
     parser.add_argument("--material", help="Refractive index file, or its name inside materials/.")
     parser.add_argument("--medium-index", type=float, help="Refractive index of the surrounding medium.")
     parser.add_argument("--type", choices=["sca", "ext", "abs"], help="Spectrum type to fit.")
@@ -92,12 +100,14 @@ def merge_settings(cfg, args):
     return s
 
 
-def collect_spectra(paths):
-    """Expands folders into the spectrum files they contain."""
+def collect_spectra(paths, pattern=None):
+    """Expands folders into the spectrum files they contain (sorted, hidden files skipped)."""
     files = []
     for p in map(Path, paths):
         if p.is_dir():
-            files += sorted(f for f in p.iterdir() if f.suffix.lower() in SPECTRUM_SUFFIXES)
+            files += sorted(f for f in p.iterdir()
+                            if f.is_file() and f.suffix.lower() in SPECTRUM_SUFFIXES
+                            and not f.name.startswith(".") and (pattern is None or fnmatch(f.name, pattern)))
         elif p.exists():
             files.append(p)
         else:
@@ -105,6 +115,18 @@ def collect_spectra(paths):
     if not files:
         raise SystemExit("No spectrum files found.")
     return files
+
+
+def sample_names(files):
+    """Sample name = file name without extension; the extension is kept when two files share a name."""
+    stems = [f.stem for f in files]
+    return [f"{f.stem}_{f.suffix.lstrip('.')}" if stems.count(f.stem) > 1 else f.stem for f in files]
+
+
+def load_material(s):
+    """Loads the refractive index data once. Returns (path, wavelengths, n, k)."""
+    mat_file = io_utils.material_path(s["material"])
+    return (mat_file, *io_utils.load_refractive_index(mat_file))
 
 
 def fit_window(exp_wl, mat_wl, wl_range, notes):
@@ -124,12 +146,11 @@ def fit_window(exp_wl, mat_wl, wl_range, notes):
     return lo, hi
 
 
-def fit_spectrum(spectrum_path, s):
-    """Runs the full pipeline for one spectrum. Returns (result, arrays, notes)."""
+def fit_spectrum(spectrum_path, s, material):
+    """Runs the full pipeline for one spectrum. `material` comes from `load_material`. Returns (result, arrays, notes)."""
     notes = []
     exp_wl, exp_signal = io_utils.load_spectrum(spectrum_path, s["wl_column"], s["signal_column"])
-    mat_file = io_utils.material_path(s["material"])
-    mat_wl, mat_n, mat_k = io_utils.load_refractive_index(mat_file)
+    _, mat_wl, mat_n, mat_k = material
 
     lo, hi = fit_window(exp_wl, mat_wl, s["wl_range"], notes)
     n_measured = np.count_nonzero((exp_wl >= lo) & (exp_wl <= hi))
@@ -158,7 +179,7 @@ def fit_spectrum(spectrum_path, s):
         theory_norm = fitting.normalised_data(result.theory)
 
     arrays = {"wavelengths": wavelengths, "exp_norm": exp_norm, "theory_norm": theory_norm}
-    return result, arrays, mat_file, notes
+    return result, arrays, notes
 
 
 def write_outputs(out_dir, spectrum_path, mat_file, s, result, arrays, notes):
@@ -204,59 +225,104 @@ def write_outputs(out_dir, spectrum_path, mat_file, s, result, arrays, notes):
     return "\n".join(lines)
 
 
+def write_batch_summary(path, s, mat_file, rows):
+    """rows: (sample, spectrum_path, result or None, status, notes)"""
+    r_min, r_max, r_step = s["radius_range"]
+    lines = [
+        "# Mie theory nanoparticle radius fit - batch summary",
+        f"# Date:          {datetime.now():%Y-%m-%d %H:%M:%S}",
+        f"# Material file: {mat_file}",
+        f"# Medium index:  {s['medium_index']}",
+        f"# Spectrum type: {s['kind']}",
+        f"# Normalisation: {s['normalisation']}",
+        f"# Radius grid:   {r_min} - {r_max} nm (step {r_step} nm, refine={s['refine']})",
+        f"# Samples:       {len(rows)} ({sum(r[3] == 'FAILED' for r in rows)} failed)",
+        "sample\tradius_nm\tdiameter_nm\trms\tstatus\tspectrum_file\tnotes",
+    ]
+    for sample, spectrum_path, result, status, notes in rows:
+        values = (f"{result.radius*1e3:.2f}\t{2*result.radius*1e3:.2f}\t{result.rms:.4g}"
+                  if result is not None else "\t\t")
+        lines.append(f"{sample}\t{values}\t{status}\t{spectrum_path}\t{'; '.join(notes)}")
+    path.write_text("\n".join(lines) + "\n")
+
+
 def main(argv=None):
     args = parse_args(argv)
     cfg = load_config(args.config)
     s = merge_settings(cfg, args)
 
-    spectra = collect_spectra(args.spectra or [cfg.get("input", {}).get("spectrum")])
+    inputs = args.spectra or [cfg.get("input", {}).get("spectrum")]
+    spectra = collect_spectra(inputs, args.pattern)
+    names = sample_names(spectra)
+    batch = len(spectra) > 1 or any(Path(p).is_dir() for p in inputs)
+    material = load_material(s)
+    mat_file = material[0]
+
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     results_dir = Path(s["results_dir"])
-    summary = []
+    if batch:
+        folder = Path(inputs[0]).resolve().name if len(inputs) == 1 else "files"
+        batch_dir = results_dir / f"batch_{folder}_{stamp}"
+        print(f"Batch of {len(spectra)} spectra, material {mat_file}\n")
 
-    if s["save_plot"] or s["show_plot"]:
+    make_plots = s["save_plot"] or s["show_plot"]
+    if make_plots:
         import matplotlib
         if not s["show_plot"]:
             matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from src import plotting
 
-    for path in spectra:
-        print(f"Fitting {path} ...")
+    rows = []
+    for i, (path, name) in enumerate(zip(spectra, names), start=1):
+        if batch:
+            print(f"[{i}/{len(spectra)}] {name} ... ", end="", flush=True)
+        else:
+            print(f"Fitting {path} ...")
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
             try:
-                result, arrays, mat_file, notes = fit_spectrum(path, s)
+                result, arrays, notes = fit_spectrum(path, s, material)
             except Exception as e:
-                print(f"  FAILED: {e}", file=sys.stderr)
-                summary.append((path, None, None, f"FAILED: {e}"))
+                print(f"FAILED: {e}", file=sys.stderr if not batch else sys.stdout)
+                rows.append((name, path, None, "FAILED", [str(e)]))
                 continue
         notes += [str(w.message) for w in caught]
 
-        out_dir = results_dir / f"{path.stem}_{stamp}"
+        out_dir = batch_dir / name if batch else results_dir / f"{name}_{stamp}"
         report = write_outputs(out_dir, path, mat_file, s, result, arrays, notes)
-        if s["save_plot"] or s["show_plot"]:
+        if make_plots:
             fig = plotting.plot_fit(arrays["wavelengths"], arrays["exp_norm"], arrays["theory_norm"],
-                                    result, s["kind"], title=path.name)
+                                    result, s["kind"], title=name)
             if s["save_plot"]:
                 fig.savefig(out_dir / "fit_plot.png", dpi=150)
-        print(report)
-        print(f"Results saved to {out_dir}/\n")
-        summary.append((path, result.radius, result.rms, "; ".join(notes)))
+            if not s["show_plot"]:
+                plt.close(fig)
 
-    if len(spectra) > 1:
-        results_dir.mkdir(parents=True, exist_ok=True)
-        summary_path = results_dir / f"batch_summary_{stamp}.txt"
-        rows = ["spectrum\tradius_nm\tdiameter_nm\trms\tnotes"]
-        for path, r, rms, note in summary:
-            rows.append(f"{path}\t{r*1e3:.2f}\t{2*r*1e3:.2f}\t{rms:.4g}\t{note}" if r is not None
-                        else f"{path}\t\t\t\t{note}")
-        summary_path.write_text("\n".join(rows) + "\n")
-        print(f"Batch summary saved to {summary_path}")
+        status = "warning" if notes else "ok"
+        rows.append((name, path, result, status, notes))
+        if batch:
+            print(f"r = {result.radius*1e3:.2f} nm (RMS {result.rms:.4g})" + (" [warning]" if notes else ""))
+        else:
+            print(report)
+            print(f"Results saved to {out_dir}/\n")
+
+    if batch:
+        batch_dir.mkdir(parents=True, exist_ok=True)
+        write_batch_summary(batch_dir / "batch_summary.txt", s, mat_file, rows)
+        fitted = [(name, result) for name, _, result, _, _ in rows if result is not None]
+        if make_plots and fitted:
+            fig = plotting.plot_batch_radii([n for n, _ in fitted], [r.radius * 1e3 for _, r in fitted])
+            if s["save_plot"]:
+                fig.savefig(batch_dir / "batch_radii.png", dpi=150)
+        n_failed = sum(r[3] == "FAILED" for r in rows)
+        n_warn = sum(r[3] == "warning" for r in rows)
+        print(f"\n{len(rows) - n_failed}/{len(rows)} fitted ({n_warn} with warnings, {n_failed} failed).")
+        print(f"Results saved to {batch_dir}/")
 
     if s["show_plot"]:
         plt.show()
-    return 0 if all(r is not None for _, r, _, _ in summary) else 1
+    return 0 if all(r[2] is not None for r in rows) else 1
 
 
 if __name__ == "__main__":

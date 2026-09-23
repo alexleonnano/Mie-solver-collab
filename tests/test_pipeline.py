@@ -95,6 +95,44 @@ def test_cli_writes_txt_results():
         assert np.loadtxt(out_dir / "rms_curve.txt").shape == (26, 2)
 
 
+def test_batch_folder():
+    """A folder is fitted as one batch: one subfolder per sample, a summary row per file, failures recorded."""
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        samples = tmp / "samples"
+        samples.mkdir()
+        for name in ("sample_A", "sample_B"):
+            (samples / f"{name}.csv").write_bytes(EXP_FILE.read_bytes())
+        (samples / "bad.csv").write_text("wl,sig\n1000,1\n1100,2\n")
+        (samples / ".hidden.csv").write_text("")
+        common = ["--config", str(ROOT / "config.toml"), "--no-plot", "--radius-range", "50", "100", "2"]
+
+        code = run_fit.main([str(samples), "--results-dir", str(tmp / "out"), *common])
+        assert code == 1  # bad.csv failed
+        (batch_dir,) = (tmp / "out").iterdir()
+        assert batch_dir.name.startswith("batch_samples_")
+        assert sorted(p.name for p in batch_dir.iterdir() if p.is_dir()) == ["sample_A", "sample_B"]
+        for name in ("sample_A", "sample_B"):
+            assert {p.name for p in (batch_dir / name).iterdir()} == {"fit_report.txt", "fit_spectrum.txt", "rms_curve.txt"}
+
+        rows = [l.split("\t") for l in (batch_dir / "batch_summary.txt").read_text().splitlines() if not l.startswith("#")]
+        header = rows[0]
+        rows = {r[0]: dict(zip(header, r)) for r in rows[1:]}
+        assert set(rows) == {"sample_A", "sample_B", "bad"}
+        assert rows["bad"]["status"] == "FAILED"
+        assert rows["sample_A"]["status"] == "ok" and rows["sample_A"]["radius_nm"].startswith("70.")
+
+        code = run_fit.main([str(samples), "--pattern", "sample_*", "--results-dir", str(tmp / "out2"), *common])
+        assert code == 0
+        (batch_dir,) = (tmp / "out2").iterdir()
+        assert "bad" not in (batch_dir / "batch_summary.txt").read_text()
+
+
+def test_sample_names_unique():
+    files = [Path("a/S1.csv"), Path("a/S2.csv"), Path("a/S2.txt")]
+    assert run_fit.sample_names(files) == ["S1", "S2_csv", "S2_txt"]
+
+
 if __name__ == "__main__":
     tests = [(name, f) for name, f in globals().items() if name.startswith("test_")]
     failed = 0

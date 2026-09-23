@@ -52,3 +52,15 @@ def plot_fit(wavelengths, exp_norm, theory_norm, result, kind="sca", title=None)
         fig.suptitle(title)
     fig.tight_layout()
     return fig
+
+
+def plot_batch_radii(names, radii_nm):
+    """Overview of a batch: fitted radius of every sample."""
+    fig, ax = plt.subplots(figsize=(max(5, 0.5 * len(names) + 2), 4))
+    ax.plot(range(len(names)), radii_nm, "o", color="firebrick")
+    ax.set_xticks(range(len(names)), names, rotation=45, ha="right")
+    ax.set_ylabel("Fitted radius (nm)")
+    ax.set_title("Batch overview")
+    ax.grid(axis="y", alpha=0.3)
+    fig.tight_layout()
+    return fig

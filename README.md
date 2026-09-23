@@ -35,7 +35,7 @@ Other examples:
 
 ```
 python run_fit.py                              # uses [input] spectrum from config.toml
-python run_fit.py experimental_data/           # fits every spectrum in the folder
+python run_fit.py experimental_data/           # batch: fits every spectrum in the folder
 python run_fit.py sample.csv --medium-index 1.0 --radius-range 20 150 0.5 --show
 python run_fit.py -h                           # all options
 ```
@@ -51,7 +51,25 @@ Each spectrum gets a folder `results/<spectrum name>_<timestamp>/` with:
 - `rms_curve.txt` - RMS for every radius tested.
 - `fit_plot.png` - measured vs fitted spectrum, residuals and RMS curve.
 
-A folder run also writes `results/batch_summary_<timestamp>.txt` with one line per spectrum.
+### Batch processing
+To size several samples at once, put their spectra in one folder, naming each file after its sample (e.g. `SiNP_A.csv`, `SiNP_B.csv`). Then run:
+
+```
+python run_fit.py path/to/folder/
+python run_fit.py path/to/folder/ --pattern "SiNP_*.csv"   # only the matching files
+```
+
+All samples are fitted with the same settings and material. Files ending in `.csv`, `.txt`, `.tsv` or `.dat` are included and hidden files are skipped. If a sample fails (e.g. an unreadable file), it is recorded and the batch carries on. Results go to one folder per batch:
+
+```
+results/batch_<folder>_<timestamp>/
+    batch_summary.txt     # settings, then one row per sample: sample, radius_nm, diameter_nm, rms, status, spectrum_file, notes
+    batch_radii.png       # fitted radius of every sample
+    SiNP_A/               # fit_report.txt, fit_spectrum.txt, rms_curve.txt, fit_plot.png
+    SiNP_B/
+```
+
+`status` is `ok`, `warning` (see the notes column and that sample's `fit_report.txt`) or `FAILED`. If two files have the same name with different extensions, the extension is added to the sample name (`S2_csv`, `S2_txt`). Giving several files on the command line also runs them as a batch.
 
 ### Settings (`config.toml`)
 | Setting | Meaning |
