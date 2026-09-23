@@ -1,0 +1,38 @@
+# Settings for run_fit.py
+# Command line options override the values here (run `python run_fit.py -h`).
+
+[input]
+# Default spectrum (or folder of spectra) used when none is given on the command line
+spectrum = "experimental_data/SiNP_crystaline_scat.csv"
+# Column names in the spectrum file; leave commented out to auto-detect
+# wl_column = "wavelength (nm)"
+# signal_column = "processed_sig"
+
+[material]
+# Path, or file name inside materials/ (e.g. "Silicon - crystalline")
+file = "materials/Silicon - crystalline - Green 2008.txt"
+# Refractive index of the surrounding medium (water)
+medium_index = 1.333
+
+[fit]
+# Spectrum compared against the measurement: "sca", "ext" or "abs"
+spectrum_type = "sca"
+# Radii tested (nm)
+radius_min_nm = 5
+radius_max_nm = 200
+radius_step_nm = 1
+# Refine the best radius between grid points
+refine = true
+# Wavelength window used for the fit (nm); defaults to the overlap of the
+# measured and refractive index data
+# wl_min_nm = 420
+# wl_max_nm = 680
+wl_step_nm = 1
+# "minmax": min-max normalise both spectra
+# "affine": fit theory as a*theory + b (tolerates baseline offsets)
+normalisation = "minmax"
+
+[output]
+results_dir = "results"
+save_plot = true
+show_plot = false
