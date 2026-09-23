@@ -7,6 +7,12 @@ Wavelengths and radii are in microns. `m_particle` follows the miepython
 convention of a negative imaginary part (n - 1j*k).
 """
 
+import os
+
+# Use miepython's numba backend (~50x faster, identical results). Must be set before
+# miepython is first imported; set MIEPYTHON_USE_JIT=0 to disable.
+os.environ.setdefault("MIEPYTHON_USE_JIT", "1")
+
 import numpy as np
 import miepython as mie
 

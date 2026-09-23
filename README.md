@@ -42,6 +42,8 @@ python run_fit.py -h                           # all options
 
 Command line options override `config.toml`.
 
+Mie calculations use miepython's numba backend, which is about 50x faster with identical results. To disable it, set the environment variable `MIEPYTHON_USE_JIT=0`.
+
 ### Output
 Each spectrum gets a folder `results/<spectrum name>_<timestamp>/` with:
 - `fit_report.txt` - best-fit radius and diameter, RMS, other local minima of the RMS curve, warnings and all settings used.
