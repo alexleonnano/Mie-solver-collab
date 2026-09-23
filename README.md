@@ -1,5 +1,5 @@
 # Mie solver implementation in python
-This is the Mie solver implementation using the miepython package
+Nanoparticle sizing from UV-Vis spectra of colloids. A measured spectrum is compared against Mie theory spectra (calculated with the `miepython` package and the refractive index data in `materials/`) over a range of particle radii, and the radius with the lowest RMS difference is reported as the particle size.
 
 ## Installation
 To run locally just download the github repo, open the terminal in the project folder and depending on what you use for package management, create an environment with the dependencies and run the files.
@@ -9,7 +9,7 @@ Open the terminal at the project folder location and create a new environment:
 
 `python -m venv <environment_name>`
 
-Then activate the environment and install the packages running the following commang:
+Then activate the environment and install the packages running the following command:
 
 `pip install -r requirements.txt`
 
@@ -22,23 +22,53 @@ After that you can activate the environment (it is called "scat"):
 
 `conda activate scat`
 
-You should be able to see this environment on your IDE to compile the files and can select the scat environment kernel inside the jupyter notebooks.
+## Usage
+1. Measure the UV-Vis spectrum and save it as a text/CSV file (wavelength column + signal column; nm or µm, comma/tab/space separated, header optional).
+2. Check the settings in `config.toml` (material, medium index, spectrum type, radius range, ...).
+3. Run:
+
+```
+python run_fit.py path/to/spectrum.csv
+```
+
+Other examples:
+
+```
+python run_fit.py                              # uses [input] spectrum from config.toml
+python run_fit.py experimental_data/           # fits every spectrum in the folder
+python run_fit.py sample.csv --medium-index 1.0 --radius-range 20 150 0.5 --show
+python run_fit.py -h                           # all options
+```
+
+Command line options override `config.toml`.
+
+### Output
+Each spectrum gets a folder `results/<spectrum name>_<timestamp>/` with:
+- `fit_report.txt` - best-fit radius and diameter, RMS, other local minima of the RMS curve, warnings and all settings used.
+- `fit_spectrum.txt` - wavelength, normalised measured and theory spectra and residuals (tab separated).
+- `rms_curve.txt` - RMS for every radius tested.
+- `fit_plot.png` - measured vs fitted spectrum, residuals and RMS curve.
+
+A folder run also writes `results/batch_summary_<timestamp>.txt` with one line per spectrum.
+
+### Settings (`config.toml`)
+| Setting | Meaning |
+| --- | --- |
+| `material.file` | Refractive index file (wavelength, n, k) |
+| `material.medium_index` | Refractive index of the surrounding medium (water = 1.333) |
+| `fit.spectrum_type` | `sca`, `ext` or `abs`. Si particles around 70 nm are scattering dominated, so `sca` is used |
+| `fit.radius_*_nm` | Radius grid; the best grid point is refined between its neighbours when `refine = true` |
+| `fit.wl_min_nm`, `fit.wl_max_nm` | Optional wavelength window, e.g. to cut noisy edges |
+| `fit.normalisation` | `minmax` (both spectra scaled to [0,1]) or `affine` (theory fitted as a·theory + b, tolerant of baseline offsets) |
 
 ## Project Structure
-The project has the following structure:
-- The main.py file has a simple script that shows how to use the miepython package, as a sample I used gold nanoparticles and it seems to work without issues.
-- The test_miepython_interpolation.ipynb is a jupyter notebook where I tested some of my interpolation functions to see if they would work properly and would not screw up the calculation, they seem to be working without issues.
-- The test_silicon_for_comparison.ipynb is a jupyter notebook where I try to replicate the CSV file you sent me with the different efficiencies, I used the absorption one as a base, this notebook at the will generate a similar CSV but with the miepython calculation.
-- Inside the tests folder, there are both the CSVs from the mathematica implementation and the miepython implementation, and a jupyter notebook where it loads both CSVs and plots the efficiencies for the same radii.
-
-## Results so far
-Right now miepython seems to be working properly, some of the efficiencies do not look that different like the one for 36 nm 
-
-<img width="565" height="480" alt="Abs_36nm" src="https://github.com/user-attachments/assets/c723a9b2-89a2-4019-a329-290c746b03eb" />
-
-
-it sort of follows this trend until the 70 nm marks where the differences start to show
-
-<img width="570" height="480" alt="Abs_71nm" src="https://github.com/user-attachments/assets/3c18e087-de39-4611-a578-99e7890e1959" />
-
-Though there are some sizes that still have some similarities, you can generate these plots and play around them in the check.ipynb notebook, and I've also added some of the graphs for a few sizes in the results folder.
+- `run_fit.py` - command line entry point of the automated pipeline.
+- `config.toml` - default settings.
+- `src/io_utils.py` - loaders for measured spectra and refractive index files.
+- `src/mie_model.py` - Mie spectra of spheres in a medium, for one or many radii.
+- `src/fitting.py` - RMS scoring and radius fitting.
+- `src/plotting.py` - diagnostic plot.
+- `legacy/squares_min_solver.py` - original single-script version of the fit (vacuum, fixed grid), kept for reference. Run it from the project root: `python legacy/squares_min_solver.py`.
+- `main.py` - simple example of the miepython package with gold nanoparticles.
+- `tests/test_pipeline.py` - tests for the pipeline, run with `python tests/test_pipeline.py` (or `pytest`).
+- `tests/` also holds the comparison between miepython and the Mathematica reference spectra, and the notebooks in the project root hold earlier interpolation/validation work.
